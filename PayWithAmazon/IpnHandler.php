@@ -8,7 +8,12 @@ namespace PayWithAmazon;
 
 require_once 'HttpCurl.php';
 require_once 'IpnHandlerInterface.php';
-class IpnHandler implements IpnHandlerInterface
+include('Psr/Log/LoggerAwareInterface.php');
+include('Psr/Log/LoggerInterface.php');
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface;
+
+class IpnHandler implements IpnHandlerInterface, LoggerAwareInterface
 {
 
     private $headers = null;
@@ -19,6 +24,9 @@ class IpnHandler implements IpnHandlerInterface
     private $certificate = null;
     private $expectedCnName = 'sns.amazonaws.com';
     private $defaultHostPattern = '/^sns\.[a-zA-Z0-9\-]{3,}\.amazonaws\.com(\.cn)?$/';
+
+    // Implement a logging library that utilizes the PSR 3 logger interface 
+    private $logger = null;
 
     private $ipnConfig = array('cabundle_file'  => null,
 			       'proxy_host' 	=> null,
@@ -71,6 +79,18 @@ class IpnHandler implements IpnHandlerInterface
                 throw new \Exception('Key ' . $key . ' is either not part of the configuration or has incorrect Key name.
 				check the ipnConfig array key names to match your key names of your config array ', 1);
             }
+        }
+    }
+
+    public function setLogger(LoggerInterface $logger = null) {
+        $this->logger = $logger;
+    }
+    
+    /* Helper function to log data within the Client */
+
+    private function logMessage($message) {
+        if ($this->logger) {
+            $this->logger->debug($message);
         }
     }
 
@@ -203,7 +223,6 @@ class IpnHandler implements IpnHandlerInterface
              * delimited by newline character + ending with a new line character
              */
             $this->signatureFields = implode("\n", $signatureFields) . "\n";
-
         }
     }
 
@@ -409,6 +428,8 @@ class IpnHandler implements IpnHandlerInterface
     {
         $ipnMessage = $this->returnMessage();
 
+        $this->logMessage($this->sanitizeResponseData($ipnMessage));
+
         // Getting the Simple XML element object of the IPN XML Response Body
         $response = simplexml_load_string((string) $ipnMessage['NotificationData']);
 
@@ -435,5 +456,25 @@ class IpnHandler implements IpnHandlerInterface
                             'ReleaseEnvironment' =>$ipnMessage['ReleaseEnvironment'] );
 
         return $remainingFields;
+    }
+
+    private function sanitizeResponseData($input)
+    {
+
+        $patterns = array();
+        $patterns[0] = '/(<SellerNote>)(.+)(<\/SellerNote>)/ms';
+        $patterns[1] = '/(<AuthorizationBillingAddress>)(.+)(<\/AuthorizationBillingAddress>)/ms';
+        $patterns[2] = '/(<SellerAuthorizationNote>)(.+)(<\/SellerAuthorizationNote>)/ms';
+        $patterns[3] = '/(<SellerCaptureNote>)(.+)(<\/SellerCaptureNote>)/ms';
+        $patterns[4] = '/(<SellerRefundNote>)(.+)(<\/SellerRefundNote>)/ms';
+
+        $replacements = array();
+        $replacements[0] = '$1 REMOVED $3';
+        $replacements[1] = '$1 REMOVED $3';
+        $replacements[2] = '$1 REMOVED $3';
+        $replacements[3] = '$1 REMOVED $3';
+        $replacements[4] = '$1 REMOVED $3';
+
+        return preg_replace($patterns, $replacements, $input);
     }
 }

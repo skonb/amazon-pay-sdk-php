@@ -11,8 +11,12 @@ require_once 'ResponseParser.php';
 require_once 'HttpCurl.php';
 require_once 'ClientInterface.php';
 require_once 'Regions.php';
+include('Psr/Log/LoggerAwareInterface.php');
+include('Psr/Log/LoggerInterface.php');
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface;
 
-class Client implements ClientInterface
+class Client implements ClientInterface, LoggerAwareInterface
 {
     const MWS_CLIENT_VERSION = '2.0.2';
     const SERVICE_VERSION = '2013-01-01';
@@ -50,6 +54,9 @@ class Client implements ClientInterface
     private $profileEndpointUrls;
     private $regionMappings;
 
+    // Implement a logging library that utilizes the PSR 3 logger interface 
+    private $logger = null;
+
     // Boolean variable to check if the API call was a success
     public $success = false;
 
@@ -61,6 +68,7 @@ class Client implements ClientInterface
     public function __construct($config = null)
     {
 	$this->getRegionUrls();
+
         if (!is_null($config)) {
 
             if (is_array($config)) {
@@ -77,6 +85,18 @@ class Client implements ClientInterface
         } else {
 	    throw new \Exception('$config cannot be null.');
 	}
+    }
+
+    public function setLogger(LoggerInterface $logger = null) {
+        $this->logger = $logger;
+    }
+    
+    /* Helper function to log data within the Client */
+
+    private function logMessage($message) {
+        if ($this->logger) {
+            $this->logger->debug($message);
+        }
     }
     
     /* Get the Region specific properties from the Regions class.*/
@@ -1411,6 +1431,9 @@ class Client implements ClientInterface
         $data .= $this->mwsEndpointPath;
         $data .= "\n";
         $data .= $this->getParametersAsString($parameters);
+
+        $this->logMessage($this->sanitizeRequestData($data));
+
         return $data;
     }
 
@@ -1424,6 +1447,7 @@ class Client implements ClientInterface
         }
 
         return implode('&', $queryParameters);
+
     }
 
     private function urlEncode($value)
@@ -1475,16 +1499,16 @@ class Client implements ClientInterface
                     $httpCurlRequest = new HttpCurl($this->config);
 					$response = $httpCurlRequest->httpPost($this->mwsServiceUrl, $this->userAgent, $parameters);
 					$curlResponseInfo = $httpCurlRequest->getCurlResponseInfo();
-					
 					$statusCode = $curlResponseInfo["http_code"];
 					
+                    $this->logMessage($this->userAgent);
+
 					$response = array(
                         'Status' => $statusCode,
                         'ResponseBody' => $response
                     );
 
 					$statusCode = $response['Status'];
-					
 		    if ($statusCode == 200) {
                         $shouldRetry    = false;
                         $this->success = true;
@@ -1504,6 +1528,8 @@ class Client implements ClientInterface
         } catch (\Exception $se) {
             throw $se;
         }
+
+        $this->logMessage($this->sanitizeResponseData($response['ResponseBody']));
 
         return $response;
     }
@@ -1603,5 +1629,48 @@ class Client implements ClientInterface
         $quotedString = preg_replace('/\\\\/', '\\\\\\\\', $quotedString);
         $quotedString = preg_replace('/\\(/', '\\(', $quotedString);
         return $quotedString;
+    }
+
+    private function sanitizeRequestData($input){
+
+        $patterns = array();
+        $patterns[0] = '/(SellerNote=)(.+)(&)/ms';
+        $patterns[1] = '/(SellerAuthorizationNote=)(.+)(&)/ms';
+        $patterns[2] = '/(SellerCaptureNote=)(.+)(&)/ms';
+        $patterns[3] = '/(SellerRefundNote=)(.+)(&)/ms';
+
+        $replacements = array();
+        $replacements[0] = '$1REMOVED$3';
+        $replacements[1] = '$1REMOVED$3';
+        $replacements[2] = '$1REMOVED$3';
+        $replacements[3] = '$1REMOVED$3';
+
+        return preg_replace($patterns, $replacements, $input);
+    }
+
+
+    private function sanitizeResponseData($input){
+
+        $patterns = array();
+        $patterns[0] = '/(<Buyer>)(.+)(<\/Buyer>)/ms';
+        $patterns[1] = '/(<PhysicalDestination>)(.+)(<\/PhysicalDestination>)/ms';
+        $patterns[2] = '/(<BillingAddress>)(.+)(<\/BillingAddress>)/ms';
+        $patterns[3] = '/(<SellerNote>)(.+)(<\/SellerNote>)/ms';
+        $patterns[4] = '/(<AuthorizationBillingAddress>)(.+)(<\/AuthorizationBillingAddress>)/ms';
+        $patterns[5] = '/(<SellerAuthorizationNote>)(.+)(<\/SellerAuthorizationNote>)/ms';
+        $patterns[6] = '/(<SellerCaptureNote>)(.+)(<\/SellerCaptureNote>)/ms';
+        $patterns[7] = '/(<SellerRefundNote>)(.+)(<\/SellerRefundNote>)/ms';
+
+        $replacements = array();
+        $replacements[0] = '$1 REMOVED $3';
+        $replacements[1] = '$1 REMOVED $3';
+        $replacements[2] = '$1 REMOVED $3';
+        $replacements[3] = '$1 REMOVED $3';
+        $replacements[4] = '$1 REMOVED $3';
+        $replacements[5] = '$1 REMOVED $3';
+        $replacements[6] = '$1 REMOVED $3';
+        $replacements[7] = '$1 REMOVED $3';
+
+        return preg_replace($patterns, $replacements, $input);
     }
 }
