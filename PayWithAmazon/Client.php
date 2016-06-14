@@ -18,7 +18,7 @@ use Psr\Log\LoggerInterface;
 
 class Client implements ClientInterface, LoggerAwareInterface
 {
-    const MWS_CLIENT_VERSION = '2.0.2';
+    const MWS_CLIENT_VERSION = '2.0.3';
     const SERVICE_VERSION = '2013-01-01';
     const MAX_ERROR_RETRY = 3;
 
