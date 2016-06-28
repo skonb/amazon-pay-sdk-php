@@ -1631,8 +1631,9 @@ class Client implements ClientInterface, LoggerAwareInterface
         return $quotedString;
     }
 
-    private function sanitizeRequestData($input){
 
+    private function sanitizeRequestData($input)
+    {
         $patterns = array();
         $patterns[0] = '/(SellerNote=)(.+)(&)/ms';
         $patterns[1] = '/(SellerAuthorizationNote=)(.+)(&)/ms';
@@ -1649,8 +1650,8 @@ class Client implements ClientInterface, LoggerAwareInterface
     }
 
 
-    private function sanitizeResponseData($input){
-
+    private function sanitizeResponseData($input)
+    {
         $patterns = array();
         $patterns[0] = '/(<Buyer>)(.+)(<\/Buyer>)/ms';
         $patterns[1] = '/(<PhysicalDestination>)(.+)(<\/PhysicalDestination>)/ms';
@@ -1672,5 +1673,12 @@ class Client implements ClientInterface, LoggerAwareInterface
         $replacements[7] = '$1 REMOVED $3';
 
         return preg_replace($patterns, $replacements, $input);
+    }
+
+
+    /* Computes RFC 2104-compliant HMAC signature */
+    public static function getSignature($stringToSign, $secretKey)
+    {
+        return base64_encode(hash_hmac('sha256', $stringToSign, $secretKey, true));
     }
 }
