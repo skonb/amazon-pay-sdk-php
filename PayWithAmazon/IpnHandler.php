@@ -8,8 +8,12 @@ namespace PayWithAmazon;
 
 require_once 'HttpCurl.php';
 require_once 'IpnHandlerInterface.php';
-include('Psr/Log/LoggerAwareInterface.php');
-include('Psr/Log/LoggerInterface.php');
+if (!interface_exists('\Psr\Log\LoggerAwareInterface')) {
+	require_once('Psr/Log/LoggerAwareInterface.php');
+}
+if (!interface_exists('\Psr\Log\LoggerAwareInterface')) {
+	require_once('Psr/Log/LoggerInterface.php');
+}
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 
