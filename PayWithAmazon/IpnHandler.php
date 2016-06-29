@@ -9,10 +9,10 @@ namespace PayWithAmazon;
 require_once 'HttpCurl.php';
 require_once 'IpnHandlerInterface.php';
 if (!interface_exists('\Psr\Log\LoggerAwareInterface')) {
-	require_once('Psr/Log/LoggerAwareInterface.php');
+    require_once('Psr/Log/LoggerAwareInterface.php');
 }
-if (!interface_exists('\Psr\Log\LoggerAwareInterface')) {
-	require_once('Psr/Log/LoggerInterface.php');
+if (!interface_exists('\Psr\Log\LoggerInterface')) {
+    require_once('Psr/Log/LoggerInterface.php');
 }
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
@@ -33,10 +33,10 @@ class IpnHandler implements IpnHandlerInterface, LoggerAwareInterface
     private $logger = null;
 
     private $ipnConfig = array('cabundle_file'  => null,
-			       'proxy_host' 	=> null,
-                               'proxy_port' 	=> -1,
+                   'proxy_host'     => null,
+                               'proxy_port'     => -1,
                                'proxy_username' => null,
-			       'proxy_password' => null);
+                   'proxy_password' => null);
 
 
     public function __construct($headers, $body, $ipnConfig = null)
@@ -74,14 +74,14 @@ class IpnHandler implements IpnHandlerInterface, LoggerAwareInterface
     private function checkConfigKeys($ipnConfig)
     {
         $ipnConfig = array_change_key_case($ipnConfig, CASE_LOWER);
-	$ipnConfig = $this->trimArray($ipnConfig);
+    $ipnConfig = $this->trimArray($ipnConfig);
 
         foreach ($ipnConfig as $key => $value) {
             if (array_key_exists($key, $this->ipnConfig)) {
                 $this->ipnConfig[$key] = $value;
             } else {
                 throw new \Exception('Key ' . $key . ' is either not part of the configuration or has incorrect Key name.
-				check the ipnConfig array key names to match your key names of your config array ', 1);
+                check the ipnConfig array key names to match your key names of your config array ', 1);
             }
         }
     }
@@ -128,11 +128,11 @@ class IpnHandler implements IpnHandlerInterface, LoggerAwareInterface
     
     private function trimArray($array)
     {
-	foreach ($array as $key => $value)
-	{
-	    $array[$key] = trim($value);
-	}
-	return $array;
+    foreach ($array as $key => $value)
+    {
+        $array[$key] = trim($value);
+    }
+    return $array;
     }
     
     private function validateHeaders()
@@ -266,7 +266,7 @@ class IpnHandler implements IpnHandlerInterface, LoggerAwareInterface
     
     private function constructAndVerifySignature()
     {
-	$signature       = base64_decode($this->getMandatoryField("Signature"));
+    $signature       = base64_decode($this->getMandatoryField("Signature"));
         $certificatePath = $this->getMandatoryField("SigningCertURL");
         $this->validateUrl($certificatePath);
         $this->certificate = $this->getCertificate($certificatePath);
@@ -286,7 +286,7 @@ class IpnHandler implements IpnHandlerInterface, LoggerAwareInterface
     {
         $httpCurlRequest  = new HttpCurl($this->ipnConfig);
 
-	$response = $httpCurlRequest->httpGet($certificatePath);
+    $response = $httpCurlRequest->httpGet($certificatePath);
 
         return $response;
     }
