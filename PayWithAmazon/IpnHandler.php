@@ -432,7 +432,8 @@ class IpnHandler implements IpnHandlerInterface, LoggerAwareInterface
     {
         $ipnMessage = $this->returnMessage();
 
-        $this->logMessage($this->sanitizeResponseData($ipnMessage));
+        $this->logMessage(sprintf('IPN received for merchant account: %s', $this->sanitizeResponseData($ipnMessage['SellerId'])));
+        $this->logMessage($this->sanitizeResponseData($ipnMessage['NotificationData']));
 
         // Getting the Simple XML element object of the IPN XML Response Body
         $response = simplexml_load_string((string) $ipnMessage['NotificationData']);
