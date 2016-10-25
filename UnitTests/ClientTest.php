@@ -626,8 +626,6 @@ class ClientTest extends \PHPUnit_Framework_TestCase
         $client = new Client($this->configParams);
         $apiCallParams = array('amazon_reference_id' => 'S01-TEST');
 
-        $client->charge($apiCallParams);
-
         try {
             $client = new Client($this->configParams);
             $apiCallParams = array('amazon_reference_id' => '');
